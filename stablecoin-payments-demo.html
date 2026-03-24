@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knova · Cross-Border Payments Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0b1826;
+      --navy-mid: #132238;
+      --navy-light: #1a2e48;
+      --gold: #c8a84b;
+      --gold-bright: #e0bf6a;
+      --gold-dim: rgba(200,168,75,0.1);
+      --gold-border: rgba(200,168,75,0.28);
+      --text: #eae6de;
+      --text-muted: #7a8ea8;
+      --text-dim: #3d5268;
+      --green: #3dba8a;
+      --red: #e05555;
+      --blue: #4a90d9;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--navy); color: var(--text); line-height: 1.6; overflow-x: hidden; }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 48px;
+      background: rgba(11,24,38,0.93); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--gold-border);
+    }
+    .nav-brand { display: flex; align-items: baseline; gap: 10px; }
+    .nav-logo { font-size: 18px; font-weight: 700; letter-spacing: 0.08em; color: var(--gold); text-transform: uppercase; }
+    .nav-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.15em; }
+    .nav-links { display: flex; gap: 28px; list-style: none; }
+    .nav-links a { font-size: 13px; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--gold); }
+
+    /* SECTIONS */
+    .section {
+      min-height: 100vh; padding: 100px 48px 80px;
+      max-width: 1140px; margin: 0 auto;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .section-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--gold); margin-bottom: 12px; }
+    h2.section-title { font-size: clamp(28px,4vw,44px); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 16px; }
+    .section-body { font-size: 16px; color: var(--text-muted); max-width: 560px; margin-bottom: 40px; line-height: 1.7; }
+    .text-gold { color: var(--gold); }
+    .text-muted { color: var(--text-muted); }
+
+    /* HERO */
+    #hero { text-align: center; align-items: center; gap: 20px; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border: 1px solid var(--gold-border); border-radius: 20px;
+      font-size: 12px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.12em;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    h1.hero-title { font-size: clamp(34px,5vw,62px); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; }
+    .hero-title .hl { color: var(--gold); }
+    .hero-sub { font-size: 17px; color: var(--text-muted); max-width: 560px; line-height: 1.7; }
+    .btn-gold {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 26px; background: var(--gold); color: var(--navy);
+      border: none; border-radius: 6px; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; text-decoration: none; font-family: 'Inter', sans-serif;
+    }
+    .btn-gold:hover { background: var(--gold-bright); transform: translateY(-1px); }
+    .twin-float-row { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+    .twin-chip {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px; background: var(--navy-mid); border: 1px solid var(--gold-border);
+      border-radius: 8px; font-size: 13px; opacity: 0; animation: floatIn 0.5s ease forwards;
+    }
+    .twin-chip:nth-child(1){animation-delay:0.1s} .twin-chip:nth-child(2){animation-delay:0.25s}
+    .twin-chip:nth-child(3){animation-delay:0.4s} .twin-chip:nth-child(4){animation-delay:0.55s}
+    .twin-chip:nth-child(5){animation-delay:0.7s}
+    @keyframes floatIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    .asset-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+    .icon-usdc { background: rgba(39,117,202,0.25); color: #4a90d9; }
+    .icon-eurc { background: rgba(90,70,190,0.25); color: #8b6fd9; }
+    .icon-usdt { background: rgba(38,161,123,0.25); color: #3dba8a; }
+
+    /* PROBLEM */
+    .systems-grid { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 28px; }
+    .system-card {
+      flex: 1; min-width: 160px; padding: 18px; background: var(--navy-mid);
+      border: 1px solid rgba(255,255,255,0.07); border-radius: 10px;
+      cursor: pointer; transition: all 0.25s; position: relative;
+    }
+    .system-card:hover { border-color: var(--gold-border); background: var(--navy-light); }
+    .system-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .system-type { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+    .asset-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .mini-chip { padding: 2px 6px; background: rgba(255,255,255,0.07); border-radius: 4px; font-size: 11px; color: var(--text-muted); }
+    .pain-pop {
+      display: none; position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+      background: var(--navy-light); border: 1px solid var(--gold-border); border-radius: 8px;
+      padding: 12px 14px; font-size: 12px; width: 220px; z-index: 20;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5); pointer-events: none;
+    }
+    .system-card:hover .pain-pop { display: block; }
+    .pain-label { font-size: 10px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px; }
+    .metrics-row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .metric-card { flex: 1; min-width: 160px; padding: 18px 22px; background: var(--navy-mid); border-left: 3px solid var(--gold); border-radius: 0 8px 8px 0; }
+    .metric-number { font-size: 30px; font-weight: 700; color: var(--gold); line-height: 1; margin-bottom: 4px; }
+    .metric-label { font-size: 12px; color: var(--text-muted); }
+
+    /* SOLUTION */
+    .twin-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: start; }
+    @media(max-width:768px){.twin-layout{grid-template-columns:1fr}}
+    .asset-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .asset-tab {
+      padding: 7px 15px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;
+      font-size: 13px; cursor: pointer; background: transparent; color: var(--text-muted);
+      transition: all 0.2s; font-family: 'Inter', sans-serif;
+    }
+    .asset-tab.active { border-color: var(--gold); background: var(--gold-dim); color: var(--gold); }
+    .twin-card { background: var(--navy-mid); border: 1px solid var(--gold-border); border-radius: 12px; overflow: hidden; font-family: 'JetBrains Mono', monospace; }
+    .twin-card-hdr {
+      padding: 14px 18px; background: rgba(200,168,75,0.07);
+      border-bottom: 1px solid var(--gold-border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .twin-card-title { font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif; color: var(--gold); }
+    .twin-status { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: rgba(61,186,138,0.15); color: var(--green); font-family: 'Inter', sans-serif; }
+    .twin-sec { padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; transition: background 0.2s; }
+    .twin-sec:last-child { border-bottom: none; }
+    .twin-sec:hover { background: rgba(255,255,255,0.02); }
+    .twin-sec.active { background: var(--gold-dim); }
+    .twin-sec-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-muted); margin-bottom: 8px; font-family: 'Inter', sans-serif; }
+    .twin-field { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; gap: 10px; }
+    .fkey { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+    .fval { font-size: 12px; color: var(--text); text-align: right; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+    .fval.hi { color: var(--gold-bright); }
+    .fval.hash { color: var(--text-dim); font-size: 11px; }
+    .fval.green { color: var(--green); }
+    .fval.settled { color: var(--gold); font-weight: 600; }
+    .explainer-list { display: flex; flex-direction: column; gap: 12px; }
+    .exp-item {
+      display: flex; gap: 14px; padding: 14px; background: var(--navy-mid);
+      border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .exp-item:hover,.exp-item.active { border-color: var(--gold-border); background: var(--gold-dim); }
+    .exp-icon { width: 34px; height: 34px; border-radius: 8px; background: rgba(200,168,75,0.12); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .exp-text h4 { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .exp-text p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+    /* RACE */
+    .race-container { display: flex; flex-direction: column; gap: 24px; margin-bottom: 28px; }
+    .race-lane { background: var(--navy-mid); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; }
+    .race-lane-hdr {
+      padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .lane-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .lane-badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .badge-fiat { background: rgba(224,85,85,0.15); color: var(--red); border: 1px solid rgba(224,85,85,0.3); }
+    .badge-stable { background: rgba(61,186,138,0.15); color: var(--green); border: 1px solid rgba(61,186,138,0.3); }
+    .lane-counters { display: flex; gap: 20px; }
+    .lane-counter { text-align: right; }
+    .lc-num { font-size: 15px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .lc-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .race-track { padding: 20px 20px 0; display: flex; align-items: center; overflow-x: auto; padding-bottom: 8px; }
+    .race-node-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; min-width: 80px; }
+    .race-node {
+      width: 52px; height: 52px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+      background: var(--navy); transition: all 0.4s;
+    }
+    .race-node-wrap.active .race-node { border-color: var(--gold); background: var(--gold-dim); box-shadow: 0 0 16px rgba(200,168,75,0.25); animation: nodeGlow 1.2s ease-in-out infinite; }
+    .race-node-wrap.done .race-node { border-color: var(--green); background: rgba(61,186,138,0.1); }
+    .race-node-wrap.done-stable .race-node { border-color: var(--green); background: rgba(61,186,138,0.15); box-shadow: 0 0 16px rgba(61,186,138,0.2); }
+    @keyframes nodeGlow { 0%,100%{box-shadow:0 0 0 0 rgba(200,168,75,0.3)} 50%{box-shadow:0 0 12px 4px rgba(200,168,75,0.1)} }
+    .race-node-lbl { font-size: 11px; font-weight: 500; text-align: center; color: var(--text-muted); line-height: 1.3; }
+    .race-node-wrap.active .race-node-lbl { color: var(--gold); }
+    .race-node-wrap.done .race-node-lbl, .race-node-wrap.done-stable .race-node-lbl { color: var(--green); }
+    .race-conn { flex-shrink: 0; width: 28px; height: 2px; background: rgba(255,255,255,0.08); position: relative; top: -20px; transition: background 0.4s; }
+    .race-conn.done { background: var(--green); }
+    .race-detail { padding: 14px 20px 16px; border-top: 1px solid rgba(255,255,255,0.05); min-height: 56px; }
+    .race-detail-text { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+    .race-controls { display: flex; gap: 12px; align-items: center; }
+    .btn-race {
+      padding: 12px 28px; background: var(--gold); border: none; border-radius: 7px;
+      color: var(--navy); font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; font-family: 'Inter', sans-serif;
+    }
+    .btn-race:hover { background: var(--gold-bright); transform: translateY(-1px); }
+    .btn-race:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-reset {
+      padding: 11px 22px; background: transparent; border: 1px solid var(--gold-border);
+      border-radius: 7px; color: var(--gold); font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; display: none;
+    }
+    .btn-reset:hover { background: var(--gold-dim); }
+    .settled-badge {
+      display: none; padding: 4px 12px; background: rgba(61,186,138,0.15);
+      border: 1px solid rgba(61,186,138,0.35); border-radius: 6px;
+      font-size: 12px; font-weight: 600; color: var(--green);
+    }
+    .race-summary {
+      display: none; background: var(--navy-mid); border: 1px solid var(--gold-border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .summary-hdr {
+      padding: 14px 20px; background: rgba(200,168,75,0.07);
+      border-bottom: 1px solid var(--gold-border); font-size: 13px; font-weight: 600; color: var(--gold);
+    }
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; }
+    @media(max-width:768px){.summary-grid{grid-template-columns:1fr 1fr}}
+    .summary-cell { padding: 18px 20px; border-right: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .summary-cell:last-child { border-right: none; }
+    .summary-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+    .summary-fiat { font-size: 14px; font-weight: 600; color: var(--red); font-family: 'JetBrains Mono', monospace; }
+    .summary-stable { font-size: 14px; font-weight: 600; color: var(--green); font-family: 'JetBrains Mono', monospace; }
+    .summary-winner { font-size: 10px; color: var(--green); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
+
+    /* LIFECYCLE */
+    .lifecycle-row { display: flex; align-items: center; margin: 36px 0 28px; overflow-x: auto; padding-bottom: 8px; }
+    .lc-stage { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1; min-width: 100px; }
+    .lc-node {
+      width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+      cursor: pointer; transition: all 0.3s; background: var(--navy-mid);
+    }
+    .lc-stage.active .lc-node { border-color: var(--gold); background: var(--gold-dim); transform: scale(1.1); box-shadow: 0 0 20px rgba(200,168,75,0.2); }
+    .lc-stage.passed .lc-node { border-color: var(--green); background: rgba(61,186,138,0.08); }
+    .lc-label { font-size: 12px; font-weight: 600; text-align: center; color: var(--text-muted); }
+    .lc-stage.active .lc-label { color: var(--gold); }
+    .lc-stage.passed .lc-label { color: var(--green); }
+    .lc-conn { flex-shrink: 0; width: 36px; height: 2px; background: rgba(255,255,255,0.08); position: relative; top: -18px; transition: background 0.4s; }
+    .lc-conn.passed { background: var(--green); }
+    .lc-detail { background: var(--navy-mid); border: 1px solid var(--gold-border); border-radius: 12px; padding: 22px; }
+    .lc-detail h3 { font-size: 16px; font-weight: 600; color: var(--gold); margin-bottom: 8px; }
+    .lc-detail p { font-size: 14px; color: var(--text-muted); line-height: 1.65; margin-bottom: 14px; }
+    .lc-counter { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--navy); border-radius: 8px; flex-wrap: wrap; }
+    .counter-lbl { font-size: 12px; color: var(--text-muted); }
+    .counter-val { font-size: 20px; font-weight: 700; color: var(--gold); font-family: 'JetBrains Mono', monospace; }
+
+    /* OUTCOMES */
+    .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px,1fr)); gap: 14px; }
+    .outcome-card { padding: 22px; background: var(--navy-mid); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; transition: all 0.3s; }
+    .outcome-card:hover { border-color: var(--gold-border); transform: translateY(-2px); }
+    .outcome-icon { font-size: 28px; margin-bottom: 12px; }
+    .outcome-title { font-size: 15px; font-weight: 600; margin-bottom: 7px; }
+    .outcome-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+    /* FOOTER */
+    footer { text-align: center; padding: 36px 48px; border-top: 1px solid var(--gold-border); color: var(--text-muted); font-size: 13px; }
+    .footer-logo { font-size: 20px; font-weight: 700; color: var(--gold); letter-spacing: 0.08em; margin-bottom: 6px; }
+
+    /* RESPONSIVE */
+    @media(max-width:768px) {
+      nav { padding: 12px 20px; }
+      .nav-links { gap: 16px; }
+      .section { padding: 80px 20px 60px; }
+      .systems-grid { flex-direction: column; }
+      .race-controls { flex-wrap: wrap; }
+      footer { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <span class="nav-logo">✕ Knova</span>
+    <span class="nav-label">Cross-Border Payments Explorer</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#problem">Problem</a></li>
+    <li><a href="#solution">Solution</a></li>
+    <li><a href="#race">Race</a></li>
+    <li><a href="#lifecycle">Lifecycle</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="section" id="hero" style="text-align:center;align-items:center;gap:20px;">
+  <div class="hero-badge"><span class="badge-dot"></span>Live Explainer</div>
+  <h1 class="hero-title">Cross-Border Payments<br>Without the <span class="hl">Friction</span></h1>
+  <p class="hero-sub">Stablecoin wallet-to-wallet transfers replace the multi-day, multi-hop fiat corridor with a single atomic transaction — settling in seconds, not days, at a fraction of the cost.</p>
+  <a href="#problem" class="btn-gold">See How It Works ↓</a>
+  <div class="twin-float-row">
+    <div class="twin-chip"><div class="asset-icon icon-usdc">$</div><span>$10,000 USDC &nbsp;<span class="text-muted" style="font-size:11px">→ Lagos, Nigeria</span></span></div>
+    <div class="twin-chip"><div class="asset-icon icon-eurc">€</div><span>€5,000 EURC &nbsp;<span class="text-muted" style="font-size:11px">→ São Paulo, Brazil</span></span></div>
+    <div class="twin-chip"><div class="asset-icon icon-usdt">₮</div><span>$500 USDT &nbsp;<span class="text-muted" style="font-size:11px">→ Mexico City</span></span></div>
+    <div class="twin-chip"><div class="asset-icon icon-usdc">$</div><span>£2,000 USDC &nbsp;<span class="text-muted" style="font-size:11px">→ Manila, Philippines</span></span></div>
+    <div class="twin-chip"><div class="asset-icon icon-eurc">¥</div><span>¥500K JPY &nbsp;<span class="text-muted" style="font-size:11px">→ Nairobi, Kenya</span></span></div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="section" id="problem">
+  <div class="section-tag">01 — The Problem</div>
+  <h2 class="section-title">Cross-Border Fiat<br>Is a Maze of Middlemen</h2>
+  <p class="section-body">Sending money across borders through traditional banking requires your payment to hop through a chain of intermediaries — each adding fees, delays, and opacity. Hover each step to see where friction builds up.</p>
+  <div class="systems-grid">
+    <div class="system-card">
+      <div class="system-name">Originating Bank</div>
+      <div class="system-type">Sender's Bank</div>
+      <div class="asset-chips"><span class="mini-chip">USD</span><span class="mini-chip">Wire</span></div>
+      <div class="pain-pop"><div class="pain-label">Friction Point</div>Initiates SWIFT message. Cut-off times apply — miss 2pm and your transfer waits until tomorrow. $25–50 outgoing wire fee charged upfront.</div>
+    </div>
+    <div class="system-card">
+      <div class="system-name">Domestic Clearing</div>
+      <div class="system-type">ACH / Fedwire</div>
+      <div class="asset-chips"><span class="mini-chip">Clearing</span><span class="mini-chip">Compliance</span></div>
+      <div class="pain-pop"><div class="pain-label">Friction Point</div>Domestic clearing and initial AML/KYC screening. Adds hours to days depending on the method. No visibility downstream from this point.</div>
+    </div>
+    <div class="system-card">
+      <div class="system-name">Correspondent Bank 1</div>
+      <div class="system-type">Intermediary</div>
+      <div class="asset-chips"><span class="mini-chip">Nostro</span><span class="mini-chip">FX</span></div>
+      <div class="pain-pop"><div class="pain-label">Friction Point</div>Holds funds in nostro/vostro accounts. Deducts opaque fees from the transfer amount. Sender has no visibility into deductions.</div>
+    </div>
+    <div class="system-card">
+      <div class="system-name">SWIFT Network</div>
+      <div class="system-type">Messaging Layer</div>
+      <div class="asset-chips"><span class="mini-chip">MT103</span><span class="mini-chip">Routing</span></div>
+      <div class="pain-pop"><div class="pain-label">Friction Point</div>SWIFT only carries messages — not money. Each bank processes independently. Status tracking (GPI) exists but is not universal.</div>
+    </div>
+    <div class="system-card">
+      <div class="system-name">Correspondent Bank 2</div>
+      <div class="system-type">Intermediary</div>
+      <div class="asset-chips"><span class="mini-chip">Compliance</span><span class="mini-chip">FX</span></div>
+      <div class="pain-pop"><div class="pain-label">Friction Point</div>Second compliance screening in destination country. May hold funds for further review. Another fee deducted from principal.</div>
+    </div>
+    <div class="system-card">
+      <div class="system-name">Beneficiary Bank</div>
+      <div class="system-type">Receiver's Bank</div>
+      <div class="asset-chips"><span class="mini-chip">Local Currency</span><span class="mini-chip">Credit</span></div>
+      <div class="pain-pop"><div class="pain-label">Friction Point</div>Finally credits the recipient — often 3–5 business days later. Recipient receives less than sent due to accumulated fees and FX spreads.</div>
+    </div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="metric-number">3–5</div><div class="metric-label">Days average end-to-end settlement</div></div>
+    <div class="metric-card"><div class="metric-number">$25–50</div><div class="metric-label">Fees deducted per transfer</div></div>
+    <div class="metric-card"><div class="metric-number">6</div><div class="metric-label">Intermediaries touching the funds</div></div>
+    <div class="metric-card"><div class="metric-number">0%</div><div class="metric-label">Real-time visibility for sender</div></div>
+  </div>
+</section>
+
+<!-- SOLUTION -->
+<section class="section" id="solution">
+  <div class="section-tag">02 — The Solution</div>
+  <h2 class="section-title">Stablecoin Transfers:<br><span class="text-gold">One Hop, One Minute</span></h2>
+  <p class="section-body">A stablecoin payment is a direct wallet-to-wallet transfer — no intermediaries, no correspondent banks, no hidden fees. Value moves atomically from sender to receiver.</p>
+  <div class="asset-tabs">
+    <button class="asset-tab active" onclick="switchStable('usdc',this)">$ USDC</button>
+    <button class="asset-tab" onclick="switchStable('eurc',this)">€ EURC</button>
+    <button class="asset-tab" onclick="switchStable('usdt',this)">₮ USDT</button>
+  </div>
+  <div class="twin-layout">
+    <div class="twin-card">
+      <div class="twin-card-hdr">
+        <span class="twin-card-title">Stablecoin Transfer · Digital Twin</span>
+        <span class="twin-status">● Confirmed</span>
+      </div>
+      <div class="twin-sec" id="sec-transfer" onclick="hlSolExp('direct')">
+        <div class="twin-sec-lbl">// Transfer Details</div>
+        <div class="twin-field"><span class="fkey">Token</span><span class="fval hi" id="sol-token">USDC</span></div>
+        <div class="twin-field"><span class="fkey">Amount</span><span class="fval hi">10,000.00</span></div>
+        <div class="twin-field"><span class="fkey">Chain</span><span class="fval" id="sol-chain">Stellar</span></div>
+        <div class="twin-field"><span class="fkey">Fee</span><span class="fval" id="sol-fee">$0.001</span></div>
+        <div class="twin-field"><span class="fkey">Time</span><span class="fval" id="sol-time">~4 seconds</span></div>
+      </div>
+      <div class="twin-sec" id="sec-sender" onclick="hlSolExp('instant')">
+        <div class="twin-sec-lbl">// Sender</div>
+        <div class="twin-field"><span class="fkey">Wallet</span><span class="fval hash">GA4F…X7KD</span></div>
+        <div class="twin-field"><span class="fkey">Verified</span><span class="fval green">KYC Complete</span></div>
+        <div class="twin-field"><span class="fkey">Region</span><span class="fval">United States</span></div>
+      </div>
+      <div class="twin-sec" id="sec-receiver" onclick="hlSolExp('fees')">
+        <div class="twin-sec-lbl">// Receiver</div>
+        <div class="twin-field"><span class="fkey">Wallet</span><span class="fval hash">GB8R…M2NP</span></div>
+        <div class="twin-field"><span class="fkey">Verified</span><span class="fval green">KYC Complete</span></div>
+        <div class="twin-field"><span class="fkey">Region</span><span class="fval">Nigeria</span></div>
+      </div>
+      <div class="twin-sec" id="sec-settlement" onclick="hlSolExp('availability')">
+        <div class="twin-sec-lbl">// Settlement</div>
+        <div class="twin-field"><span class="fkey">Tx Hash</span><span class="fval hash">a8c4…f91e</span></div>
+        <div class="twin-field"><span class="fkey">Block</span><span class="fval hash">#52,847,103</span></div>
+        <div class="twin-field"><span class="fkey">Finality</span><span class="fval">Immediate</span></div>
+        <div class="twin-field"><span class="fkey">Status</span><span class="fval settled">Settled</span></div>
+      </div>
+    </div>
+    <div class="explainer-list">
+      <div class="exp-item active" id="sol-direct" onclick="hlSolExp('direct')">
+        <div class="exp-icon">🎯</div>
+        <div class="exp-text">
+          <h4>Direct Transfer</h4>
+          <p>No intermediaries. Sender's wallet debits, receiver's wallet credits in a single atomic operation. No correspondent banks, no nostro accounts, no SWIFT messages.</p>
+        </div>
+      </div>
+      <div class="exp-item" id="sol-instant" onclick="hlSolExp('instant')">
+        <div class="exp-icon">⚡</div>
+        <div class="exp-text">
+          <h4>Instant Settlement</h4>
+          <p>Finality in seconds to minutes depending on the blockchain — not 3–5 business days. The receiver can use the funds immediately upon arrival.</p>
+        </div>
+      </div>
+      <div class="exp-item" id="sol-fees" onclick="hlSolExp('fees')">
+        <div class="exp-icon">💎</div>
+        <div class="exp-text">
+          <h4>Transparent Fees</h4>
+          <p>Network fee is visible upfront before you send. No hidden deductions, no opaque FX spreads, no correspondent bank charges eating into the principal.</p>
+        </div>
+      </div>
+      <div class="exp-item" id="sol-availability" onclick="hlSolExp('availability')">
+        <div class="exp-icon">🌐</div>
+        <div class="exp-text">
+          <h4>24/7 Availability</h4>
+          <p>Blockchains don't observe banking hours, cut-off times, weekends, or holidays. Send value anytime, anywhere, to anyone with a wallet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RACE -->
+<section class="section" id="race">
+  <div class="section-tag">03 — Live Demo</div>
+  <h2 class="section-title">The Race: Fiat Wire<br>vs. <span class="text-gold">Stablecoin Transfer</span></h2>
+  <p class="section-body">Both lanes send $10,000 from New York to Lagos. Press Start to watch them race. The stablecoin transfer settles while the fiat wire is still clearing its first intermediary.</p>
+
+  <div class="race-container">
+    <!-- Fiat Lane -->
+    <div class="race-lane">
+      <div class="race-lane-hdr">
+        <div class="lane-title">🏦 International Wire Transfer <span class="lane-badge badge-fiat">FIAT</span></div>
+        <div class="lane-counters">
+          <div class="lane-counter">
+            <div class="lc-num" id="fiat-time" style="color:var(--text-muted)">0h 0m</div>
+            <div class="lc-lbl">Elapsed</div>
+          </div>
+          <div class="lane-counter">
+            <div class="lc-num" id="fiat-fee" style="color:var(--red)">$0.00</div>
+            <div class="lc-lbl">Fees</div>
+          </div>
+          <div class="lane-counter">
+            <div class="lc-num" id="fiat-amount" style="color:var(--text)">$10,000.00</div>
+            <div class="lc-lbl">Amount</div>
+          </div>
+        </div>
+      </div>
+      <div class="race-track" id="fiat-track">
+        <div class="race-node-wrap" id="fn-0"><div class="race-node">🏦</div><div class="race-node-lbl">Originating<br>Bank</div></div>
+        <div class="race-conn" id="fc-0"></div>
+        <div class="race-node-wrap" id="fn-1"><div class="race-node">🔄</div><div class="race-node-lbl">Domestic<br>Clearing</div></div>
+        <div class="race-conn" id="fc-1"></div>
+        <div class="race-node-wrap" id="fn-2"><div class="race-node">🏛️</div><div class="race-node-lbl">Correspondent<br>Bank 1</div></div>
+        <div class="race-conn" id="fc-2"></div>
+        <div class="race-node-wrap" id="fn-3"><div class="race-node">📡</div><div class="race-node-lbl">SWIFT<br>Network</div></div>
+        <div class="race-conn" id="fc-3"></div>
+        <div class="race-node-wrap" id="fn-4"><div class="race-node">🏛️</div><div class="race-node-lbl">Correspondent<br>Bank 2</div></div>
+        <div class="race-conn" id="fc-4"></div>
+        <div class="race-node-wrap" id="fn-5"><div class="race-node">🏦</div><div class="race-node-lbl">Beneficiary<br>Bank</div></div>
+      </div>
+      <div class="race-detail" id="fiat-detail">
+        <div class="race-detail-text" id="fiat-detail-text" style="color:var(--text-dim)">Press Start Race to begin the simulation →</div>
+      </div>
+    </div>
+
+    <!-- Stablecoin Lane -->
+    <div class="race-lane">
+      <div class="race-lane-hdr">
+        <div class="lane-title">⚡ Stablecoin Transfer (USDC) <span class="lane-badge badge-stable">STABLECOIN</span></div>
+        <div class="lane-counters">
+          <div class="lane-counter">
+            <div class="lc-num" id="stable-time" style="color:var(--text-muted)">0s</div>
+            <div class="lc-lbl">Elapsed</div>
+          </div>
+          <div class="lane-counter">
+            <div class="lc-num" id="stable-fee" style="color:var(--green)">$0.000</div>
+            <div class="lc-lbl">Fee</div>
+          </div>
+          <div class="lane-counter">
+            <div class="lc-num" id="stable-amount" style="color:var(--text)">$10,000.00</div>
+            <div class="lc-lbl">Amount</div>
+          </div>
+        </div>
+      </div>
+      <div class="race-track" id="stable-track">
+        <div class="race-node-wrap" id="sn-0"><div class="race-node">📱</div><div class="race-node-lbl">Sender<br>Wallet</div></div>
+        <div class="race-conn" id="sc-0"></div>
+        <div class="race-node-wrap" id="sn-1"><div class="race-node">⛓️</div><div class="race-node-lbl">Blockchain<br>Confirmation</div></div>
+        <div class="race-conn" id="sc-1"></div>
+        <div class="race-node-wrap" id="sn-2"><div class="race-node">📱</div><div class="race-node-lbl">Receiver<br>Wallet</div></div>
+      </div>
+      <div class="race-detail" id="stable-detail">
+        <div class="race-detail-text" id="stable-detail-text" style="color:var(--text-dim)">Waiting to start…</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
+    <div class="race-controls">
+      <button class="btn-race" id="startBtn" onclick="startRace()">▶ Start Race</button>
+      <button class="btn-reset" id="resetBtn" onclick="resetRace()">↺ Reset</button>
+    </div>
+    <span class="settled-badge" id="settled-badge">✓ Stablecoin Settled</span>
+  </div>
+
+  <div class="race-summary" id="race-summary">
+    <div class="summary-hdr">📊 Race Results — $10,000 New York → Lagos</div>
+    <div class="summary-grid">
+      <div class="summary-cell">
+        <div class="summary-label">Settlement Time</div>
+        <div class="summary-fiat">3–5 days</div>
+        <div class="summary-stable" id="sum-stable-time">4 seconds</div>
+        <div class="summary-winner">↑ 99.99% faster</div>
+      </div>
+      <div class="summary-cell">
+        <div class="summary-label">Total Fee</div>
+        <div class="summary-fiat">$44.50</div>
+        <div class="summary-stable">$0.001</div>
+        <div class="summary-winner">↑ 44,500× cheaper</div>
+      </div>
+      <div class="summary-cell">
+        <div class="summary-label">Hops / Steps</div>
+        <div class="summary-fiat">6 intermediaries</div>
+        <div class="summary-stable">1 transaction</div>
+        <div class="summary-winner">↑ Direct transfer</div>
+      </div>
+      <div class="summary-cell">
+        <div class="summary-label">Amount Received</div>
+        <div class="summary-fiat">$9,955.50</div>
+        <div class="summary-stable">$9,999.999</div>
+        <div class="summary-winner">↑ Full amount delivered</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIFECYCLE -->
+<section class="section" id="lifecycle">
+  <div class="section-tag">04 — Stablecoin Lifecycle</div>
+  <h2 class="section-title">The Journey of<br>a <span class="text-gold">Stablecoin Dollar</span></h2>
+  <p class="section-body">Every stablecoin follows a lifecycle — from minting backed by real reserves to burning upon redemption. Click each stage to explore.</p>
+
+  <div class="lifecycle-row">
+    <div class="lc-stage active" id="lc-0" onclick="selStage(0)">
+      <div class="lc-node">🏦</div><div class="lc-label">Minted</div>
+    </div>
+    <div class="lc-conn" id="lcc-0"></div>
+    <div class="lc-stage" id="lc-1" onclick="selStage(1)">
+      <div class="lc-node">📤</div><div class="lc-label">On-Ramped</div>
+    </div>
+    <div class="lc-conn" id="lcc-1"></div>
+    <div class="lc-stage" id="lc-2" onclick="selStage(2)">
+      <div class="lc-node">⚡</div><div class="lc-label">Transferred</div>
+    </div>
+    <div class="lc-conn" id="lcc-2"></div>
+    <div class="lc-stage" id="lc-3" onclick="selStage(3)">
+      <div class="lc-node">📥</div><div class="lc-label">Off-Ramped</div>
+    </div>
+    <div class="lc-conn" id="lcc-3"></div>
+    <div class="lc-stage" id="lc-4" onclick="selStage(4)">
+      <div class="lc-node">🔥</div><div class="lc-label">Burned</div>
+    </div>
+  </div>
+
+  <div class="lc-detail">
+    <h3 id="lcTitle">🏦 Minted</h3>
+    <p id="lcDesc">A regulated issuer (e.g., Circle for USDC) receives fiat deposits into a reserve account. For each dollar deposited, one stablecoin token is minted and issued on-chain. Reserves are held in cash and short-term US Treasuries, audited monthly by independent firms.</p>
+    <div class="lc-counter">
+      <span class="counter-lbl">Supply:</span>
+      <span class="counter-val" id="lcCount">1,000,000</span>
+      <span style="font-size:12px;color:var(--text-muted);margin-left:4px">USDC</span>
+      <span style="font-size:11px;color:var(--green);margin-left:8px" id="lcChange">+1,000,000 minted</span>
+    </div>
+  </div>
+</section>
+
+<!-- OUTCOMES -->
+<section class="section" id="outcomes">
+  <div class="section-tag">05 — What This Enables</div>
+  <h2 class="section-title">From Days and Dollars<br>to <span class="text-gold">Seconds and Cents</span></h2>
+  <p class="section-body">Stablecoin infrastructure unlocks new possibilities for global payments, financial inclusion, and treasury management.</p>
+  <div class="outcomes-grid">
+    <div class="outcome-card">
+      <div class="outcome-icon">💸</div>
+      <div class="outcome-title">Remittances at Near-Zero Cost</div>
+      <div class="outcome-desc">Migrant workers sending money home lose 6–8% to fees through traditional channels. Stablecoin transfers cost fractions of a cent — putting more money in the hands of families who need it most.</div>
+    </div>
+    <div class="outcome-card">
+      <div class="outcome-icon">⚡</div>
+      <div class="outcome-title">Instant Global Commerce</div>
+      <div class="outcome-desc">Pay international suppliers, contractors, and freelancers in seconds. No more waiting days for wire clearance or pre-funding accounts in every country you operate in.</div>
+    </div>
+    <div class="outcome-card">
+      <div class="outcome-icon">🌍</div>
+      <div class="outcome-title">Financial Inclusion</div>
+      <div class="outcome-desc">2 billion people lack bank accounts but increasingly have smartphones. A stablecoin wallet gives anyone with internet access the ability to store, send, and receive US dollars — no bank required.</div>
+    </div>
+    <div class="outcome-card">
+      <div class="outcome-icon">🏛️</div>
+      <div class="outcome-title">Treasury Efficiency</div>
+      <div class="outcome-desc">Corporates can hold stablecoins instead of pre-funding nostro accounts in dozens of countries. Deploy capital on-demand across any corridor, earn yield on reserves until the moment of payment.</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">✕ KNOVA</div>
+  <p>Unified Transaction Management Platform · Patented Digital Twin Technology</p>
+  <p style="margin-top:6px;font-size:11px;color:var(--text-dim)">Interactive demo for educational purposes. Not financial or legal advice.</p>
+</footer>
+
+<script>
+  // ── SOLUTION TABS ──
+  const stables = {
+    usdc: { token: 'USDC', chain: 'Stellar',  fee: '$0.001',  time: '~4 seconds'  },
+    eurc: { token: 'EURC', chain: 'Ethereum', fee: '$0.85',   time: '~15 seconds' },
+    usdt: { token: 'USDT', chain: 'Tron',     fee: '$1.00',   time: '~3 seconds'  },
+  };
+  function switchStable(type, btn) {
+    document.querySelectorAll('.asset-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    const d = stables[type];
+    document.getElementById('sol-token').textContent = d.token;
+    document.getElementById('sol-chain').textContent = d.chain;
+    document.getElementById('sol-fee').textContent   = d.fee;
+    document.getElementById('sol-time').textContent  = d.time;
+  }
+
+  const sectionMap = {
+    direct:       'sec-transfer',
+    instant:      'sec-sender',
+    fees:         'sec-receiver',
+    availability: 'sec-settlement',
+  };
+  function hlSolExp(key) {
+    document.querySelectorAll('.exp-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.twin-sec').forEach(s => s.classList.remove('active'));
+    const exp = document.getElementById('sol-' + key);
+    if (exp) exp.classList.add('active');
+    const sec = document.getElementById(sectionMap[key]);
+    if (sec) sec.classList.add('active');
+  }
+
+  // ── RACE ──
+  let raceBusy = false, raceComplete = false;
+
+  const fiatSteps = [
+    { time: '2h 0m',  fees: 0,     detail: '🏦 Originating Bank: Wire initiated. SWIFT MT103 message queued. $25 outgoing fee charged. Cut-off in 30 minutes.' },
+    { time: '8h 30m', fees: 0,     detail: '🔄 Domestic Clearing: ACH sweep complete. Initial AML screening passed. Funds forwarded to correspondent network.' },
+    { time: '18h 0m', fees: 12.50, detail: '🏛️ Correspondent Bank 1: Funds received in nostro account. $12.50 intermediary fee deducted. FX conversion queued.' },
+    { time: '24h 0m', fees: 0,     detail: '📡 SWIFT Network: Routing message transmitted to destination correspondent. No money moves — messages only.' },
+    { time: '48h 0m', fees: 7.00,  detail: '🏛️ Correspondent Bank 2: Destination country compliance check. $7.00 fee deducted. Awaiting beneficiary bank credit window.' },
+    { time: '72h 0m', fees: 25.00, detail: '🏦 Beneficiary Bank: Payment credited to recipient account. Total journey: 72 hours, $44.50 in fees, $9,955.50 delivered.' },
+  ];
+  const stableSteps = [
+    { time: '1s',  detail: '📱 Sender Wallet: Transaction signed and broadcast to the Stellar network. Gas fee: $0.001.' },
+    { time: '3s',  detail: '⛓️ Blockchain: Transaction included in ledger #52,847,103. Validators confirm. Finality achieved.' },
+    { time: '4s',  detail: '📱 Receiver Wallet: $9,999.999 USDC credited. Funds immediately available. Settlement complete.' },
+  ];
+
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function setFiatNode(idx, state) {
+    const el = document.getElementById('fn-' + idx);
+    if (!el) return;
+    el.className = 'race-node-wrap ' + state;
+  }
+  function setFiatConn(idx, done) {
+    const el = document.getElementById('fc-' + idx);
+    if (el) el.className = 'race-conn' + (done ? ' done' : '');
+  }
+  function setStableNode(idx, state) {
+    const el = document.getElementById('sn-' + idx);
+    if (!el) return;
+    el.className = 'race-node-wrap ' + state;
+  }
+  function setStableConn(idx, done) {
+    const el = document.getElementById('sc-' + idx);
+    if (el) el.className = 'race-conn' + (done ? ' done' : '');
+  }
+
+  async function runFiat() {
+    let totalFees = 0;
+    let amount = 10000;
+    for (let i = 0; i < 6; i++) {
+      setFiatNode(i, 'active');
+      if (i > 0) setFiatConn(i - 1, true);
+      const step = fiatSteps[i];
+      document.getElementById('fiat-detail-text').textContent = step.detail;
+      document.getElementById('fiat-detail-text').style.color = 'var(--text-muted)';
+      document.getElementById('fiat-time').textContent = step.time;
+      totalFees += step.fees;
+      amount -= step.fees;
+      document.getElementById('fiat-fee').textContent = '$' + totalFees.toFixed(2);
+      document.getElementById('fiat-amount').textContent = '$' + amount.toFixed(2);
+      await wait(2000);
+      setFiatNode(i, 'done');
+    }
+    setFiatConn(4, true);
+    document.getElementById('fiat-time').style.color = 'var(--red)';
+    document.getElementById('fiat-amount').style.color = 'var(--red)';
+    document.getElementById('race-summary').style.display = 'block';
+    document.getElementById('resetBtn').style.display = 'inline-block';
+  }
+
+  async function runStable() {
+    for (let i = 0; i < 3; i++) {
+      setStableNode(i, 'active');
+      if (i > 0) setStableConn(i - 1, true);
+      const step = stableSteps[i];
+      document.getElementById('stable-detail-text').textContent = step.detail;
+      document.getElementById('stable-detail-text').style.color = 'var(--text-muted)';
+      document.getElementById('stable-time').textContent = step.time;
+      await wait(800);
+    }
+    document.getElementById('stable-fee').textContent = '$0.001';
+    document.getElementById('stable-fee').style.color = 'var(--green)';
+    document.getElementById('stable-amount').textContent = '$9,999.999';
+    document.getElementById('stable-amount').style.color = 'var(--green)';
+    document.getElementById('stable-time').style.color = 'var(--green)';
+    setStableConn(1, true);
+    document.getElementById('settled-badge').style.display = 'inline-block';
+    // Show partial summary
+    document.getElementById('race-summary').style.display = 'block';
+  }
+
+  async function startRace() {
+    if (raceBusy || raceComplete) return;
+    raceBusy = true;
+    document.getElementById('startBtn').disabled = true;
+    // Run both simultaneously
+    await Promise.all([runStable(), runFiat()]);
+    raceComplete = true;
+    raceBusy = false;
+  }
+
+  function resetRace() {
+    raceComplete = false;
+    raceBusy = false;
+    // Reset fiat nodes
+    for (let i = 0; i < 6; i++) {
+      setFiatNode(i, '');
+      if (i < 5) setFiatConn(i, false);
+    }
+    // Reset stable nodes
+    for (let i = 0; i < 3; i++) {
+      setStableNode(i, '');
+      if (i < 2) setStableConn(i, false);
+    }
+    document.getElementById('fiat-time').textContent = '0h 0m';
+    document.getElementById('fiat-time').style.color = 'var(--text-muted)';
+    document.getElementById('fiat-fee').textContent = '$0.00';
+    document.getElementById('fiat-amount').textContent = '$10,000.00';
+    document.getElementById('fiat-amount').style.color = 'var(--text)';
+    document.getElementById('fiat-detail-text').textContent = 'Press Start Race to begin the simulation →';
+    document.getElementById('fiat-detail-text').style.color = 'var(--text-dim)';
+    document.getElementById('stable-time').textContent = '0s';
+    document.getElementById('stable-time').style.color = 'var(--text-muted)';
+    document.getElementById('stable-fee').textContent = '$0.000';
+    document.getElementById('stable-fee').style.color = 'var(--green)';
+    document.getElementById('stable-amount').textContent = '$10,000.00';
+    document.getElementById('stable-amount').style.color = 'var(--text)';
+    document.getElementById('stable-detail-text').textContent = 'Waiting to start…';
+    document.getElementById('stable-detail-text').style.color = 'var(--text-dim)';
+    document.getElementById('settled-badge').style.display = 'none';
+    document.getElementById('race-summary').style.display = 'none';
+    document.getElementById('resetBtn').style.display = 'none';
+    document.getElementById('startBtn').disabled = false;
+  }
+
+  // ── LIFECYCLE ──
+  const lcData = [
+    {
+      icon: '🏦', title: 'Minted',
+      desc: 'A regulated issuer (e.g., Circle for USDC) receives fiat deposits into a reserve account. For each dollar deposited, one stablecoin token is minted and issued on-chain. Reserves are held in cash and short-term US Treasuries, audited monthly by independent firms.',
+      count: '1,000,000', change: '+1,000,000 minted', changeColor: 'var(--green)',
+    },
+    {
+      icon: '📤', title: 'On-Ramped',
+      desc: 'Users acquire stablecoins through exchanges, payment apps, or direct issuance. KYC/AML verification happens at this stage — once verified, the user\'s wallet can send and receive freely. This is the bridge from traditional banking into the digital asset ecosystem.',
+      count: '1,000,000', change: 'In circulation', changeColor: 'var(--blue)',
+    },
+    {
+      icon: '⚡', title: 'Transferred',
+      desc: 'Stablecoins move wallet-to-wallet — atomic, instant, auditable. Each transfer updates ownership cryptographically. No intermediaries, no clearing delays. The same token can change hands hundreds of times without ever touching a bank.',
+      count: '1,000,000', change: 'Continuously moving', changeColor: 'var(--gold)',
+    },
+    {
+      icon: '📥', title: 'Off-Ramped',
+      desc: 'The receiver converts stablecoins back to local fiat currency through an exchange or payment provider. In many corridors this takes minutes, not days. The stablecoins return to the issuer or remain in circulation for the next user.',
+      count: '950,000', change: '−50,000 redeemed', changeColor: 'var(--text-muted)',
+    },
+    {
+      icon: '🔥', title: 'Burned',
+      desc: 'When stablecoins are redeemed for fiat, the issuer burns (destroys) the corresponding tokens, reducing the supply. The fiat reserves are released to the redeemer. The burn is recorded on-chain — fully transparent, verifiable by anyone, at any time.',
+      count: '950,000', change: 'Supply reduced, reserves released', changeColor: 'var(--red)',
+    },
+  ];
+
+  let currentStage = 0;
+  function selStage(idx) {
+    currentStage = idx;
+    for (let i = 0; i < 5; i++) {
+      const el = document.getElementById('lc-' + i);
+      const conn = document.getElementById('lcc-' + i);
+      el.className = 'lc-stage' + (i === idx ? ' active' : i < idx ? ' passed' : '');
+      if (conn) conn.className = 'lc-conn' + (i < idx ? ' passed' : '');
+    }
+    const d = lcData[idx];
+    document.getElementById('lcTitle').textContent = d.icon + ' ' + d.title;
+    document.getElementById('lcDesc').textContent = d.desc;
+    document.getElementById('lcCount').textContent = d.count;
+    document.getElementById('lcChange').textContent = d.change;
+    document.getElementById('lcChange').style.color = d.changeColor;
+  }
+</script>
+</body>
+</html>
